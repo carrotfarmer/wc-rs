@@ -11,8 +11,6 @@ use clap::Parser;
 
 #[derive(Parser, Debug)]
 struct Args {
-    filename: std::path::PathBuf,
-
     #[clap(short = 'l', long)]
     lines: bool,
 
@@ -27,11 +25,14 @@ struct Args {
 
     #[clap(short = 'L', long)]
     max_line_length: bool,
+
+    #[clap(num_args=1.., value_delimiter=' ')]
+    filenames: Vec<std::path::PathBuf>,
 }
 
 #[derive(Debug)]
 struct Wc {
-    filename: std::path::PathBuf,
+    filenames: Vec<std::path::PathBuf>,
     words: bool,
     lines: bool,
     bytes: bool,
@@ -41,7 +42,7 @@ struct Wc {
 
 impl Wc {
     fn new(
-        filename: std::path::PathBuf,
+        filenames: Vec<std::path::PathBuf>,
         words: bool,
         lines: bool,
         bytes: bool,
@@ -49,7 +50,7 @@ impl Wc {
         max_line_length: bool,
     ) -> Self {
         Self {
-            filename,
+            filenames,
             words,
             lines,
             bytes,
@@ -63,29 +64,33 @@ impl Display for Wc {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "\t")?;
 
-        let contents = fs::read_to_string(&self.filename).unwrap();
+        for filename in &self.filenames {
+            let contents = fs::read_to_string(&filename).unwrap();
 
-        if self.lines {
-            write!(f, "{}\t", count_lines(&contents))?;
+            if self.lines {
+                write!(f, "{}\t", count_lines(&contents))?;
+            }
+
+            if self.words {
+                write!(f, "{}\t", count_words(&contents))?;
+            }
+
+            if self.bytes {
+                write!(f, "{}\t", count_bytes(&contents))?;
+            }
+
+            if self.chars {
+                write!(f, "{}\t", count_chars(&contents))?;
+            }
+
+            if self.max_line_length {
+                write!(f, "{}\t", count_lines(&contents))?;
+            }
+
+            write!(f, "{}\n\t", &filename.display())?
         }
 
-        if self.words {
-            write!(f, "{}\t", count_words(&contents))?;
-        }
-
-        if self.bytes {
-            write!(f, "{}\t", count_bytes(&contents))?;
-        }
-
-        if self.chars {
-            write!(f, "{}\t", count_chars(&contents))?;
-        }
-
-        if self.max_line_length {
-            write!(f, "{}\t", count_lines(&contents))?;
-        }
-
-        write!(f, "{}", self.filename.display())
+        Ok(())
     }
 }
 
@@ -98,22 +103,24 @@ fn main() {
         args.bytes = true;
     }
 
-    match File::open(&args.filename) {
-        Err(e) => match e.kind() {
-            ErrorKind::NotFound => {
-                println!("No such file: {:?}", args.filename);
-                exit(1);
-            }
-            _ => {
-                println!("Error: {:?}", e);
-                exit(1);
-            }
-        },
-        Ok(_) => {}
+    for filename in &args.filenames {
+        match File::open(filename) {
+            Err(e) => match e.kind() {
+                ErrorKind::NotFound => {
+                    println!("No such file: {:?}", filename);
+                    exit(1);
+                }
+                _ => {
+                    println!("Error: {:?}", e);
+                    exit(1);
+                }
+            },
+            Ok(_) => {}
+        }
     }
 
     let wc_output = Wc::new(
-        args.filename.clone(),
+        args.filenames.clone(),
         args.words,
         args.lines,
         args.bytes,

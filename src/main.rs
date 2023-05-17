@@ -61,28 +61,28 @@ impl Wc {
 
 impl Display for Wc {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "\t");
+        write!(f, "\t")?;
 
         let contents = fs::read_to_string(&self.filename).unwrap();
 
         if self.lines {
-            write!(f, "{}\t", count_lines(&contents));
+            write!(f, "{}\t", count_lines(&contents))?;
         }
 
         if self.words {
-            write!(f, "{}\t", count_words(&contents));
+            write!(f, "{}\t", count_words(&contents))?;
         }
 
         if self.bytes {
-            write!(f, "{}\t", count_bytes(&contents));
+            write!(f, "{}\t", count_bytes(&contents))?;
         }
 
         if self.chars {
-            write!(f, "{}\t", count_chars(&contents));
+            write!(f, "{}\t", count_chars(&contents))?;
         }
 
         if self.max_line_length {
-            write!(f, "{}\t", count_lines(&contents));
+            write!(f, "{}\t", count_lines(&contents))?;
         }
 
         write!(f, "{}", self.filename.display())

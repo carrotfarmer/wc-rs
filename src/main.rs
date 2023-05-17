@@ -1,5 +1,5 @@
-mod wc;
 mod count;
+mod wc;
 
 use crate::wc::*;
 
@@ -39,12 +39,21 @@ fn main() {
         args.bytes = true;
     }
 
-    for filename in &args.filenames {
+    let filenames = args.filenames.clone();
+
+    for filename in &filenames {
         match File::open(filename) {
             Err(e) => match e.kind() {
                 ErrorKind::NotFound => {
-                    println!("No such file: {:?}", filename);
-                    exit(1);
+                    println!("No such file: {:?}", filename.clone());
+                    let filenames: Vec<std::path::PathBuf> = filenames
+                        .clone()
+                        .iter()
+                        .filter(|&e| e != filename)
+                        .map(|e| e.clone())
+                        .collect();
+
+                    args.filenames = filenames;
                 }
                 _ => {
                     println!("Error: {:?}", e);

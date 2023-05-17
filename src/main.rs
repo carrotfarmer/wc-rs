@@ -84,7 +84,7 @@ impl Display for Wc {
             }
 
             if self.max_line_length {
-                write!(f, "{}\t", count_lines(&contents))?;
+                write!(f, "{} ", max_line_len(&contents))?;
             }
 
             write!(f, "{}\n\t", &filename.display())?

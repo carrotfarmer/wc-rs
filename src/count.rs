@@ -31,3 +31,15 @@ pub fn count_bytes(contents: &str) -> u32 {
 pub fn count_chars(contents: &str) -> u32 {
     contents.len() as u32
 }
+
+pub fn max_line_len(contents: &str) -> u32 {
+    let mut longest_line = "";
+
+    for line in contents.lines() {
+        if longest_line.len() < line.len() {
+            longest_line = line;
+        }
+    }
+
+    longest_line.len() as u32
+}

@@ -46,6 +46,11 @@ impl Display for Wc {
         let mut total_chars = 0;
 
         for filename in &self.filenames {
+            if !filename.exists() {
+                println!("No such file: {:?}", filename);
+                continue;
+            }
+
             let contents = fs::read_to_string(&filename).unwrap();
 
             if self.lines {
@@ -104,5 +109,102 @@ impl Display for Wc {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_wc() {
+        let filenames = vec![std::path::PathBuf::from("test.txt")];
+        let wc = Wc::new(filenames, true, true, true, true, true);
+
+        assert_eq!(format!("{}", wc), "\t49\t301\t1462\t1462\t43test.txt\n\t");
+    }
+
+    #[test]
+    fn test_wc_multiple_files() {
+        let filenames = vec![
+            std::path::PathBuf::from("test.txt"),
+            std::path::PathBuf::from("test2.txt"),
+        ];
+        let wc = Wc::new(filenames, true, true, true, true, true);
+
+        assert_eq!(
+            format!("{}", wc),
+            "\t49\t301\t1462\t1462\t43test.txt\n\t55\t286\t1392\t1392\t44test2.txt\n\t104\t587\t2854\t2854\t44total"
+        );
+    }
+
+    #[test]
+    fn test_wc_nonexistent_file() {
+        let filenames = vec![std::path::PathBuf::from("nonexistent.txt")];
+
+        let wc = Wc::new(filenames, true, true, true, true, true).to_string();
+        assert_eq!(wc, "\t");
+    }
+
+    #[test]
+    fn test_wc_multiple_files_with_nonexistent_file() {
+        let filenames = vec![
+            std::path::PathBuf::from("test.txt"),
+            std::path::PathBuf::from("nonexistent.txt"),
+        ];
+
+        let wc = Wc::new(filenames, true, true, true, true, true).to_string();
+        assert_eq!(
+            wc,
+            "\t49\t301\t1462\t1462\t43test.txt\n\t49\t301\t1462\t1462\t43total"
+        );
+    }
+
+    #[test]
+    fn test_wc_lines() {
+        let filenames = vec![std::path::PathBuf::from("test.txt")];
+
+        let wc = Wc::new(filenames, true, false, false, false, false).to_string();
+        assert_eq!(wc, "\t301\ttest.txt\n\t");
+    }
+
+    #[test]
+    fn test_wc_words() {
+        let filenames = vec![std::path::PathBuf::from("test.txt")];
+
+        let wc = Wc::new(filenames, false, true, false, false, false).to_string();
+        assert_eq!(wc, "\t49\ttest.txt\n\t");
+    }
+
+    #[test]
+    fn test_wc_bytes() {
+        let filenames = vec![std::path::PathBuf::from("test.txt")];
+
+        let wc = Wc::new(filenames, false, false, true, false, false).to_string();
+        assert_eq!(wc, "\t1462\ttest.txt\n\t");
+    }
+
+    #[test]
+    fn test_wc_chars() {
+        let filenames = vec![std::path::PathBuf::from("test.txt")];
+
+        let wc = Wc::new(filenames, false, false, false, true, false).to_string();
+        assert_eq!(wc, "\t1462\ttest.txt\n\t");
+    }
+
+    #[test]
+    fn test_wc_max_line_length() {
+        let filenames = vec![std::path::PathBuf::from("test.txt")];
+
+        let wc = Wc::new(filenames, false, false, false, false, true).to_string();
+        assert_eq!(wc, "\t43test.txt\n\t");
+    }
+
+    #[test]
+    fn test_wc_multiple_flags() {
+        let filenames = vec![std::path::PathBuf::from("test.txt")];
+
+        let wc = Wc::new(filenames, true, true, false, false, false).to_string();
+        assert_eq!(wc, "\t49\t301\ttest.txt\n\t");
     }
 }

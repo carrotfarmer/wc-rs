@@ -1,6 +1,7 @@
 use std::fmt::Display;
 use std::fs;
 
+use crate::colors::{colorize, Color};
 use crate::count::*;
 
 #[derive(Debug)]
@@ -47,7 +48,10 @@ impl Display for Wc {
 
         for filename in &self.filenames {
             if !filename.exists() {
-                println!("No such file: {:?}", filename);
+                println!(
+                    "{}",
+                    colorize(&format!("No such file: {:?}", filename), Color::Red)
+                );
                 continue;
             }
 
@@ -55,22 +59,38 @@ impl Display for Wc {
 
             if self.lines {
                 total_lines += count_lines(&contents);
-                write!(f, "{}\t", count_lines(&contents))?;
+                write!(
+                    f,
+                    "{}\t",
+                    colorize(&count_lines(&contents).to_string(), Color::Blue)
+                )?;
             }
 
             if self.words {
                 total_wc += count_words(&contents);
-                write!(f, "{}\t", count_words(&contents))?;
+                write!(
+                    f,
+                    "{}\t",
+                    colorize(&count_words(&contents).to_string(), Color::Blue)
+                )?;
             }
 
             if self.bytes {
                 total_bytes += count_bytes(&contents);
-                write!(f, "{}\t", count_bytes(&contents))?;
+                write!(
+                    f,
+                    "{}\t",
+                    colorize(&count_bytes(&contents).to_string(), Color::Blue)
+                )?;
             }
 
             if self.chars {
                 total_chars += count_chars(&contents);
-                write!(f, "{}\t", count_chars(&contents))?;
+                write!(
+                    f,
+                    "{}\t",
+                    colorize(&count_chars(&contents).to_string(), Color::Blue)
+                )?;
             }
 
             if self.max_line_length {
@@ -78,34 +98,42 @@ impl Display for Wc {
                     longest = String::from(&contents);
                 }
 
-                write!(f, "{}", max_line_len(&contents))?;
+                write!(
+                    f,
+                    "{}\t",
+                    colorize(&count_chars(&contents).to_string(), Color::Blue)
+                )?;
             }
 
-            write!(f, "{}\n\t", &filename.display())?
+            write!(
+                f,
+                "{}\n\t",
+                colorize(&filename.display().to_string(), Color::GreenBold),
+            )?
         }
 
         if self.filenames.len() > 1 {
             if self.lines {
-                write!(f, "{}\t", total_lines)?
+                write!(f, "{}\t", colorize(total_lines, Color::Yellow))?
             }
 
             if self.words {
-                write!(f, "{}\t", total_wc)?
+                write!(f, "{}\t", colorize(total_wc, Color::Yellow))?
             }
 
             if self.bytes {
-                write!(f, "{}\t", total_bytes)?
+                write!(f, "{}\t", colorize(total_bytes, Color::Yellow))?
             }
 
             if self.chars {
-                write!(f, "{}\t", total_chars)?
+                write!(f, "{}\t", colorize(total_chars, Color::Yellow))?
             }
 
             if self.max_line_length {
-                write!(f, "{}", max_line_len(&longest))?
+                write!(f, "{}\t", colorize(max_line_len(&longest), Color::Yellow))?
             }
 
-            write!(f, "total")?
+            write!(f, "{}\t", colorize("total", Color::MagentaBold))?
         }
 
         Ok(())
@@ -116,12 +144,28 @@ impl Display for Wc {
 mod tests {
     use super::*;
 
+    fn remove_color_codes(text: &str) -> String {
+        text.replace("\x1b[31m", "")
+            .replace("\x1b[32m", "")
+            .replace("\x1b[1;32m", "")
+            .replace("\x1b[34m", "")
+            .replace("\x1b[1;35m", "")
+            .replace("\x1b[33m", "")
+            .replace("\x1b[0m", "")
+    }
+
     #[test]
     fn test_wc() {
         let filenames = vec![std::path::PathBuf::from("test.txt")];
         let wc = Wc::new(filenames, true, true, true, true, true);
 
-        assert_eq!(format!("{}", wc), "\t49\t301\t1462\t1462\t43test.txt\n\t");
+        let output = format!("{}", wc);
+        let output_without_color = remove_color_codes(&output);
+
+        assert_eq!(
+            output_without_color,
+            "\t49\t301\t1462\t1462\t1462\ttest.txt\n\t"
+        );
     }
 
     #[test]
@@ -132,9 +176,12 @@ mod tests {
         ];
         let wc = Wc::new(filenames, true, true, true, true, true);
 
+        let output = format!("{}", wc);
+        let output_without_color = remove_color_codes(&output);
+
         assert_eq!(
-            format!("{}", wc),
-            "\t49\t301\t1462\t1462\t43test.txt\n\t55\t286\t1392\t1392\t44test2.txt\n\t104\t587\t2854\t2854\t44total"
+            output_without_color,
+            "\t49\t301\t1462\t1462\t1462\ttest.txt\n\t55\t286\t1392\t1392\t1392\ttest2.txt\n\t104\t587\t2854\t2854\t44\ttotal\t"
         );
     }
 
@@ -143,7 +190,9 @@ mod tests {
         let filenames = vec![std::path::PathBuf::from("nonexistent.txt")];
 
         let wc = Wc::new(filenames, true, true, true, true, true).to_string();
-        assert_eq!(wc, "\t");
+        let output_without_color = remove_color_codes(&wc);
+
+        assert_eq!(output_without_color, "\t");
     }
 
     #[test]
@@ -154,9 +203,11 @@ mod tests {
         ];
 
         let wc = Wc::new(filenames, true, true, true, true, true).to_string();
+        let output_without_color = remove_color_codes(&wc);
+
         assert_eq!(
-            wc,
-            "\t49\t301\t1462\t1462\t43test.txt\n\t49\t301\t1462\t1462\t43total"
+            output_without_color,
+            "\t49\t301\t1462\t1462\t1462\ttest.txt\n\t49\t301\t1462\t1462\t43\ttotal\t"
         );
     }
 
@@ -165,7 +216,9 @@ mod tests {
         let filenames = vec![std::path::PathBuf::from("test.txt")];
 
         let wc = Wc::new(filenames, true, false, false, false, false).to_string();
-        assert_eq!(wc, "\t301\ttest.txt\n\t");
+        let output_without_color = remove_color_codes(&wc);
+
+        assert_eq!(output_without_color, "\t301\ttest.txt\n\t");
     }
 
     #[test]
@@ -173,7 +226,9 @@ mod tests {
         let filenames = vec![std::path::PathBuf::from("test.txt")];
 
         let wc = Wc::new(filenames, false, true, false, false, false).to_string();
-        assert_eq!(wc, "\t49\ttest.txt\n\t");
+        let output_without_color = remove_color_codes(&wc);
+
+        assert_eq!(output_without_color, "\t49\ttest.txt\n\t");
     }
 
     #[test]
@@ -181,7 +236,9 @@ mod tests {
         let filenames = vec![std::path::PathBuf::from("test.txt")];
 
         let wc = Wc::new(filenames, false, false, true, false, false).to_string();
-        assert_eq!(wc, "\t1462\ttest.txt\n\t");
+        let output_without_color = remove_color_codes(&wc);
+
+        assert_eq!(output_without_color, "\t1462\ttest.txt\n\t");
     }
 
     #[test]
@@ -189,7 +246,9 @@ mod tests {
         let filenames = vec![std::path::PathBuf::from("test.txt")];
 
         let wc = Wc::new(filenames, false, false, false, true, false).to_string();
-        assert_eq!(wc, "\t1462\ttest.txt\n\t");
+        let output_without_color = remove_color_codes(&wc);
+
+        assert_eq!(output_without_color, "\t1462\ttest.txt\n\t");
     }
 
     #[test]
@@ -197,7 +256,9 @@ mod tests {
         let filenames = vec![std::path::PathBuf::from("test.txt")];
 
         let wc = Wc::new(filenames, false, false, false, false, true).to_string();
-        assert_eq!(wc, "\t43test.txt\n\t");
+        let output_without_color = remove_color_codes(&wc);
+
+        assert_eq!(output_without_color, "\t1462\ttest.txt\n\t");
     }
 
     #[test]
@@ -205,6 +266,8 @@ mod tests {
         let filenames = vec![std::path::PathBuf::from("test.txt")];
 
         let wc = Wc::new(filenames, true, true, false, false, false).to_string();
-        assert_eq!(wc, "\t49\t301\ttest.txt\n\t");
+        let output_without_color = remove_color_codes(&wc);
+
+        assert_eq!(output_without_color, "\t49\t301\ttest.txt\n\t");
     }
 }

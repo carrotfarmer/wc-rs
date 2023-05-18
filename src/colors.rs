@@ -2,7 +2,6 @@ use std::fmt::Display;
 
 pub enum Color {
     Red,
-    Green,
     GreenBold,
     Blue,
     MagentaBold,
@@ -12,7 +11,6 @@ pub enum Color {
 pub fn colorize<T: Display>(text: T, color: Color) -> String {
     match color {
         Color::Red => format!("\x1b[31m{}\x1b[0m", text),
-        Color::Green => format!("\x1b[32m{}\x1b[0m", text),
         Color::GreenBold => format!("\x1b[1;32m{}\x1b[0m", text), 
         Color::Blue => format!("\x1b[34m{}\x1b[0m", text),
         Color::MagentaBold => format!("\x1b[1;35m{}\x1b[0m", text),

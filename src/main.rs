@@ -75,6 +75,4 @@ fn main() {
     );
 
     println!("{}", wc_output);
-    println!("\x1b[93mError\x1b[0m");
-    println!("\x1b[34msome text\x1b[0m");
 }
